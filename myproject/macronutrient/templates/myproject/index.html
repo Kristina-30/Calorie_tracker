@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+    <div class="row">
+        <div class="col-md-12">
+            <nav class="navbar navbar-dark bg-dark">
+                <div class="navbar-brand ms-5"> 🌿 Calorie Tracker </div>
+            </nav>
+        </div>
+    </div>
+    <div class="bg-warning-subtle">
+        <div class="container">
+        
+            <br><br>
+            
+            <h4> Human Energy Requirements Calculator </h4> <br>
+            <div class="row">
+                <div class="col-md-12 "> Weight(kg) <input type="text" id="weight"></div> <br>
+                <div class="col-md-12 mt-2"> Height(cm) <input type="text" id="height"></div> 
+                <div class="col-md-12 mt-2"> Age(years) <input type="text" id="age"></div> <br>
+                <div class="col-md-12 mt-2"> Gender (man/ woman) <input type="text" id="gender"> </div> <br>
+                <div class="col-md-12 mt-2"> Physical activity (sedentary/ moderate/ intense) <input type="text" id="activity"></div> <br>
+                <button class="btn btn-primary col-md-1 mt-2" id="calculate"> Calculate </button> <br><br>
+                <div class="col-md-12 mt-2"> Your Human Energy Requirements: <span id="result"> </span> </div>
+            
+            </div>
+
+            <br>
+
+            <div class="row">
+                <h5> <b> Calorie Goal </b> </h5>
+                <div class="col-md-9" offset="1">
+                    <div class="progress">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0"> <span id="percentage"> </span></div>
+                    </div>
+                </div>
+            </div>
+
+            <br><br>
+            
+            <div class="row">
+                <div class="col-md-12">
+                    <form  method="POST">
+                        <div class="form-group row">
+                            {% csrf_token %}
+                            <label class="col-md-2">
+                            <b> Select Food </b>
+                            </label>
+                            <select class="col-md-3" name="food_consumed" id="food_consumed">
+                                {% for food in foods %}
+                                <option value="{{ food.name }}"> {{ food.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-primary ms-2 col-md-1" type="submit"> Add </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <br>
+
+            <div class="row">
+                <div class="col-md-7">
+                    <div>
+                        <h5> Today's Consumption </h5>
+                    </div>
+
+                    <table id="table" class="table table-striped table-danger">
+                        <tr class="bg-primary text-white">
+                            <th> Food item </th>
+                            <th> Carbs(g) </th>
+                            <th> Protein(g) </th>
+                            <th> Total Fat(g) </th>
+                            <th> Calories(kcal) </th>
+                            <th> Delete </th>
+                        </tr>
+                        {% for item in consumed_food %}
+                        <tr>
+                            <td>
+                                {{ item.food_consumed.name }}
+                            </td>
+                            <td>
+                                {{ item.food_consumed.glucids }}
+                            </td>
+                            <td>
+                                {{ item.food_consumed.proteins }}
+                            </td>
+                            <td>
+                                {{ item.food_consumed.fats }}
+                            </td>
+                            <td>
+                                {{ item.food_consumed.calories }}
+                            </td>
+                            <td><a href="{% url 'delete' item.id %}"> Remove </a></td>
+                        </tr>
+                        {% endfor %}
+
+                        <tr>
+                            <td> <b> Total </b> </td>
+                            <td id="totalGlucids"> </td>
+                            <td id="totalProtein"> </td>
+                            <td id="totalFats"> </td>
+                            <td id="totalCalories"> </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="">
+                        <h5> Today's breakdown </h5>
+                    </div>
+                    <div class="card-header text-white bg-warning">
+                        <h5> Macronutrients breakdown </h5>
+                    </div>
+                    <div class="col-md-12">
+                        <canvas id="myChart" width="400" height="400"></canvas>
+
+                    </div>
+                    <h6 class="mt-3"> Macronutrients Percentage target: </h6>
+                    <span> Carb: 45-55 %; </span>
+                    <span> Protein: 10-30 %;  </span>
+                    <span> Fats: 15-25 % </span>
+                </div> 
+            </div>
+            <br><br><br>
+        </div>
+    </div>
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+<script>
+    var table = document.getElementById('table');
+    var glucids = 0, protein = 0, fats = 0, calories = 0
+
+    for(var i = 1; i < table.rows.length - 1; i++) {
+ 
+        glucids += parseFloat(table.rows[i].cells[1].innerHTML);
+        glucids = Math.round(glucids)
+        protein += parseFloat(table.rows[i].cells[2].innerHTML);
+        protein = Math.round(protein)
+        fats += parseFloat(table.rows[i].cells[3].innerHTML);
+        fats = Math.round(fats)
+        calories += parseFloat(table.rows[i].cells[4].innerHTML);
+        calories = Math.round(calories)
+    }
+    console.log(glucids);
+    console.log(protein);
+    console.log(fats);
+    console.log(calories);
+
+    document.getElementById('totalGlucids').innerHTML = '<b>' + glucids + '(g) </b>';
+    document.getElementById('totalProtein').innerHTML = '<b>' + protein + '(g) </b>';
+    document.getElementById('totalFats').innerHTML = '<b>' + fats + '(g) </b>';
+    document.getElementById('totalCalories').innerHTML = '<b>' + calories + '(kcal) </b>';
+
+    window.onload = () => {
+        let button = document.querySelector('#calculate');
+        button.addEventListener("click", calc);
+    }
+    function calc() {
+        let weight = parseInt(document.querySelector('#weight').value);
+        let height = parseInt(document.querySelector('#height').value);
+        let age = parseInt(document.querySelector('#age').value);
+        let gender = document.querySelector('#gender').value;
+        let activity = document.querySelector('#activity').value;
+        let her = document.querySelector('#result');
+
+        
+        if(gender === 'man'){
+            if(activity === 'sedentary') {
+                her = Math.round((1.2 * (66 + (13.7 * weight + 5 * height - 6.8 * age))));
+                result.innerHTML = `<span> <b> ${her} kcal </b> </span>`;
+                
+            }
+            else if(activity === 'moderate') {
+                her = Math.round((1.37 * (66 + (13.7 * weight + 5 * height - 6.8 * age))));
+                result.innerHTML = `<span> <b> ${her} kcal </b> </span>`;
+            }
+            else {
+                her = Math.round((1.72 * (66 + (13.7 * weight + 5 * height - 6.8 * age))));
+                result.innerHTML = `<span> <b> ${her} kcal </b> </span>`;
+            }
+        }
+        else if(gender === 'woman') {
+            if(activity === 'sedentary') {
+                her = Math.round((1.2 * (655 + (9.5 * weight + 1.8 * height - 4.7 * age))));
+                result.innerHTML = `<span> <b> ${her} kcal </b> </span>`;
+            }
+            else if(activity === 'moderate') {
+                her = Math.round((1.37 * (655 + (9.5 * weight + 1.8 * height - 4.7 * age))));
+                result.innerHTML = `<span> <b> ${her} kcal </b> </span>`;
+            }
+            else {
+                her = Math.round((1.72 * (655 + (9.5 * weight + 1.8 * height - 4.7 * age))));
+                result.innerHTML = `<span> <b> ${her} kcal </b> </span>`;
+            }
+        }
+        var calPer = (calories / her) * 100;
+        document.getElementsByClassName("progress-bar")[0].setAttribute("style", "width:" + calPer + "%");
+        document.getElementById('percentage').innerHTML = '<b>' + calPer.toFixed(0) + '% </b>';
+    }
+
+
+
+    var total = glucids + protein + fats;
+    var glucidsPer = Math.round((glucids/total) * 100);
+    var proteinPer = Math.round((protein/total) * 100);
+    var fatsPer = Math.round((fats/total) * 100);
+
+
+    var ctx = document.getElementById('myChart').getContext('2d');
+                var myChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Carb ' + glucidsPer + '%', 'Protein ' + proteinPer + '%', 'Fats ' + fatsPer + '%'],
+                        datasets: [{
+                            label: 'Consumed Macronutrients Percentage',
+                            data: [glucidsPer, proteinPer, fatsPer],
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.8)',
+                                'rgba(54, 162, 235, 0.8)',
+                                'rgba(255, 206, 86, 0.8)',
+                            ], 
+                            borderColor: [
+                                'rgba(255, 99, 132, 1)',
+                                'rgba(54, 162, 235, 1)',
+                                'rgba(255, 206, 86, 1)',
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                });
+            
+
+    
+
+    
+
+</script>
+</html>
